@@ -15,12 +15,6 @@ public class FullNoteFormatter extends AbstractNoteFormatter
     @Override
     public String format(Note note)
     {
-        return titleLine(note) + String.format(
-            "%nТекст: %s%nКатегорія: %s%nПріоритет: %d%nЧас виконання: %s",
-            note.getText(),
-            note.getCategory(),
-            note.getPriority(),
-            note.getTimeDescription()
-        );
+        return note.toString();
     }
 }
