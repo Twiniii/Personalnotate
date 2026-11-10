@@ -1,13 +1,15 @@
 import exceptions.NoteException;
-import formatters.CompactNoteFormatter;
-import formatters.FullNoteFormatter;
+import factories.NoteFormatterFactory;
 import interfaces.Describable;
 import interfaces.NoteFormatter;
 import java.util.InputMismatchException;
 import java.util.Locale;
 import java.util.Scanner;
 import models.Note;
+import observers.ConsoleNoteObserver;
+import observers.NoteStatisticsObserver;
 import services.NoteDisplay;
+import services.Notebook;
 
 public class Main
 {
@@ -18,13 +20,13 @@ public class Main
 
         try
         {
-            Note[] notes = new Note[100];
-            int noteCount = 0;
+            Notebook notebook = new Notebook();
+            NoteStatisticsObserver statistics = new NoteStatisticsObserver();
 
-            NoteFormatter[] formatters = {
-                new FullNoteFormatter(),
-                new CompactNoteFormatter()
-            };
+            notebook.addObserver(new ConsoleNoteObserver());
+            notebook.addObserver(statistics);
+
+            NoteFormatter[] formatters = NoteFormatterFactory.createAvailable();
 
             NoteDisplay display = new NoteDisplay(formatters[0]);
 
@@ -40,6 +42,7 @@ public class Main
                 System.out.println("4. Відсортувати за пріоритетом");
                 System.out.println("5. Знайти нотатку за повним збігом");
                 System.out.println("6. Змінити формат відображення");
+                System.out.println("7. Переглянути статистику");
                 System.out.println("0. Вийти");
                 System.out.print("Оберіть дію: ");
 
@@ -51,13 +54,13 @@ public class Main
                 }
                 else if (choice.equals("1"))
                 {
-                    if (noteCount == notes.length)
+                    if (notebook.getFreePlaces() == 0)
                     {
                         System.out.println("Масив нотаток заповнений.");
                         continue;
                     }
 
-                    int freePlaces = notes.length - noteCount;
+                    int freePlaces = notebook.getFreePlaces();
 
                     int amount = readInt(
                         scanner,
@@ -69,21 +72,29 @@ public class Main
                     for (int i = 0; i < amount; i++)
                     {
                         System.out.println();
-                        System.out.println("Нотатка №" + (noteCount + 1));
 
-                        notes[noteCount] = readValidNote(scanner);
-                        noteCount++;
+                        System.out.println(
+                            "Нотатка №" + (notebook.getCount() + 1)
+                        );
+
+                        Note note = readValidNote(scanner);
+                        notebook.addNote(note);
                     }
 
                     System.out.println("Додано нотаток: " + amount);
                 }
                 else if (choice.equals("2"))
                 {
-                    openNote(scanner, notes, noteCount, display);
+                    openNote(
+                        scanner,
+                        notebook.getNotes(),
+                        notebook.getCount(),
+                        display
+                    );
                 }
                 else if (choice.equals("3"))
                 {
-                    if (noteCount == 0)
+                    if (notebook.getCount() == 0)
                     {
                         System.out.println("Поки немає створених нотаток.");
                         continue;
@@ -98,12 +109,12 @@ public class Main
 
                     int foundCount = 0;
 
-                    for (int i = 0; i < noteCount; i++)
+                    for (int i = 0; i < notebook.getCount(); i++)
                     {
-                        if (notes[i].getPriority() == searchPriority)
+                        if (notebook.getNote(i).getPriority() == searchPriority)
                         {
                             System.out.println();
-                            display.show(notes[i]);
+                            display.show(notebook.getNote(i));
                             foundCount++;
                         }
                     }
@@ -112,24 +123,24 @@ public class Main
                 }
                 else if (choice.equals("4"))
                 {
-                    if (noteCount == 0)
+                    if (notebook.getCount() == 0)
                     {
                         System.out.println("Поки немає створених нотаток.");
                         continue;
                     }
 
                     System.out.println("До сортування:");
-                    printNotes(notes, display);
+                    printNotes(notebook.getNotes(), display);
 
-                    sortByPriority(notes, noteCount);
+                    notebook.sortByPriority();
 
                     System.out.println();
                     System.out.println("Після сортування:");
-                    printNotes(notes, display);
+                    printNotes(notebook.getNotes(), display);
                 }
                 else if (choice.equals("5"))
                 {
-                    if (noteCount == 0)
+                    if (notebook.getCount() == 0)
                     {
                         System.out.println("Поки немає створених нотаток.");
                         continue;
@@ -140,7 +151,7 @@ public class Main
                     );
 
                     Note sample = readValidNote(scanner);
-                    int index = findNote(notes, noteCount, sample);
+                    int index = notebook.findNote(sample);
 
                     if (index == -1)
                     {
@@ -154,7 +165,7 @@ public class Main
                             "Знайдено нотатку №" + (index + 1)
                         );
 
-                        display.show(notes[index]);
+                        display.show(notebook.getNote(index));
                     }
                 }
                 else if (choice.equals("6"))
@@ -163,9 +174,13 @@ public class Main
                         scanner,
                         formatters,
                         display,
-                        notes,
-                        noteCount
+                        notebook.getNotes(),
+                        notebook.getCount()
                     );
+                }
+                else if (choice.equals("7"))
+                {
+                    statistics.printStatistics();
                 }
                 else
                 {
@@ -191,9 +206,11 @@ public class Main
             catch (NoteException error)
             {
                 System.out.println(error.getMessage());
+
                 System.out.println(
                     "Некоректне значення: [" + error.getInvalidValue() + "]"
                 );
+
                 System.out.println("Введіть нотатку повторно.");
             }
         }
@@ -432,6 +449,7 @@ public class Main
         for (NoteFormatter formatter : formatters)
         {
             System.out.println();
+
             System.out.printf(
                 "%d. %s%n",
                 number,
@@ -483,42 +501,9 @@ public class Main
 
             System.out.println();
             System.out.println("Нотатка №" + number);
-            display.show(note);
 
+            display.show(note);
             number++;
         }
-    }
-
-    static void sortByPriority(Note[] notes, int noteCount)
-    {
-        for (int i = 0; i < noteCount - 1; i++)
-        {
-            for (int j = 0; j < noteCount - 1 - i; j++)
-            {
-                if (notes[j].getPriority() > notes[j + 1].getPriority())
-                {
-                    Note temporary = notes[j];
-                    notes[j] = notes[j + 1];
-                    notes[j + 1] = temporary;
-                }
-            }
-        }
-    }
-
-    static int findNote(
-        Note[] notes,
-        int noteCount,
-        Note sample
-    )
-    {
-        for (int i = 0; i < noteCount; i++)
-        {
-            if (notes[i].equals(sample))
-            {
-                return i;
-            }
-        }
-
-        return -1;
     }
 }
