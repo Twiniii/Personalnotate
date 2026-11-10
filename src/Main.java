@@ -1,6 +1,13 @@
+import exceptions.NoteException;
+import formatters.CompactNoteFormatter;
+import formatters.FullNoteFormatter;
+import interfaces.Describable;
+import interfaces.NoteFormatter;
 import java.util.InputMismatchException;
 import java.util.Locale;
 import java.util.Scanner;
+import models.Note;
+import services.NoteDisplay;
 
 public class Main
 {
@@ -14,16 +21,25 @@ public class Main
             Note[] notes = new Note[100];
             int noteCount = 0;
 
+            NoteFormatter[] formatters = {
+                new FullNoteFormatter(),
+                new CompactNoteFormatter()
+            };
+
+            NoteDisplay display = new NoteDisplay(formatters[0]);
+
             System.out.println("Personalnotate");
 
             while (true)
             {
                 System.out.println();
+                System.out.println("Формат: " + display.getFormatName());
                 System.out.println("1. Додати нотатки");
                 System.out.println("2. Переглянути список та відкрити нотатку");
                 System.out.println("3. Показати та порахувати за пріоритетом");
                 System.out.println("4. Відсортувати за пріоритетом");
                 System.out.println("5. Знайти нотатку за повним збігом");
+                System.out.println("6. Змінити формат відображення");
                 System.out.println("0. Вийти");
                 System.out.print("Оберіть дію: ");
 
@@ -63,7 +79,7 @@ public class Main
                 }
                 else if (choice.equals("2"))
                 {
-                    openNote(scanner, notes, noteCount);
+                    openNote(scanner, notes, noteCount, display);
                 }
                 else if (choice.equals("3"))
                 {
@@ -84,10 +100,10 @@ public class Main
 
                     for (int i = 0; i < noteCount; i++)
                     {
-                        if (notes[i].priority == searchPriority)
+                        if (notes[i].getPriority() == searchPriority)
                         {
                             System.out.println();
-                            System.out.println(notes[i]);
+                            display.show(notes[i]);
                             foundCount++;
                         }
                     }
@@ -103,13 +119,13 @@ public class Main
                     }
 
                     System.out.println("До сортування:");
-                    printNotes(notes);
+                    printNotes(notes, display);
 
                     sortByPriority(notes, noteCount);
 
                     System.out.println();
                     System.out.println("Після сортування:");
-                    printNotes(notes);
+                    printNotes(notes, display);
                 }
                 else if (choice.equals("5"))
                 {
@@ -138,8 +154,18 @@ public class Main
                             "Знайдено нотатку №" + (index + 1)
                         );
 
-                        System.out.println(notes[index]);
+                        display.show(notes[index]);
                     }
+                }
+                else if (choice.equals("6"))
+                {
+                    chooseFormatter(
+                        scanner,
+                        formatters,
+                        display,
+                        notes,
+                        noteCount
+                    );
                 }
                 else
                 {
@@ -286,18 +312,8 @@ public class Main
         }
     }
 
-    static void openNote(
-        Scanner scanner,
-        Note[] notes,
-        int noteCount
-    )
+    static void printTitles(Note[] notes)
     {
-        if (noteCount == 0)
-        {
-            System.out.println("Поки немає створених нотаток.");
-            return;
-        }
-
         int number = 1;
 
         for (Note note : notes)
@@ -307,10 +323,18 @@ public class Main
                 continue;
             }
 
-            System.out.printf("%d. %s%n", number, note.title);
+            System.out.printf(
+                "%d. %s%n",
+                number,
+                note.getTitle()
+            );
+
             number++;
         }
+    }
 
+    static int readNoteNumber(Scanner scanner, int noteCount)
+    {
         while (true)
         {
             System.out.print(
@@ -325,19 +349,18 @@ public class Main
 
                 if (selected == 0)
                 {
-                    return;
+                    return 0;
                 }
 
                 if (selected < 1 || selected > noteCount)
                 {
                     throw new IndexOutOfBoundsException(
-                        "Номер нотатки повинен бути від 1 до " + noteCount + "."
+                        "Номер нотатки повинен бути від 1 до "
+                            + noteCount + "."
                     );
                 }
 
-                System.out.println();
-                System.out.println(notes[selected - 1]);
-                return;
+                return selected;
             }
             catch (NumberFormatException error)
             {
@@ -352,7 +375,102 @@ public class Main
         }
     }
 
-    static void printNotes(Note[] notes)
+    static void openNote(
+        Scanner scanner,
+        Note[] notes,
+        int noteCount,
+        NoteDisplay display
+    )
+    {
+        if (noteCount == 0)
+        {
+            System.out.println("Поки немає створених нотаток.");
+            return;
+        }
+
+        printTitles(notes);
+
+        int selected = readNoteNumber(scanner, noteCount);
+
+        if (selected != 0)
+        {
+            System.out.println();
+            display.show(notes[selected - 1]);
+        }
+    }
+
+    static void chooseFormatter(
+        Scanner scanner,
+        NoteFormatter[] formatters,
+        NoteDisplay display,
+        Note[] notes,
+        int noteCount
+    )
+    {
+        Note preview = null;
+
+        if (noteCount > 0)
+        {
+            System.out.println(
+                "Оберіть нотатку для попереднього перегляду:"
+            );
+
+            printTitles(notes);
+
+            int selected = readNoteNumber(scanner, noteCount);
+
+            if (selected == 0)
+            {
+                return;
+            }
+
+            preview = notes[selected - 1];
+        }
+
+        int number = 1;
+
+        for (NoteFormatter formatter : formatters)
+        {
+            System.out.println();
+            System.out.printf(
+                "%d. %s%n",
+                number,
+                formatter.getName()
+            );
+
+            if (formatter instanceof Describable describable)
+            {
+                System.out.println(
+                    describable.getDescription()
+                );
+            }
+
+            if (preview != null)
+            {
+                formatter.print(preview);
+            }
+
+            number++;
+        }
+
+        int selected = readInt(
+            scanner,
+            "Оберіть формат (0 — залишити поточний): ",
+            0,
+            formatters.length
+        );
+
+        if (selected != 0)
+        {
+            display.setFormatter(formatters[selected - 1]);
+
+            System.out.println(
+                "Обрано формат: " + display.getFormatName()
+            );
+        }
+    }
+
+    static void printNotes(Note[] notes, NoteDisplay display)
     {
         int number = 1;
 
@@ -365,7 +483,7 @@ public class Main
 
             System.out.println();
             System.out.println("Нотатка №" + number);
-            System.out.println(note);
+            display.show(note);
 
             number++;
         }
@@ -377,7 +495,7 @@ public class Main
         {
             for (int j = 0; j < noteCount - 1 - i; j++)
             {
-                if (notes[j].priority > notes[j + 1].priority)
+                if (notes[j].getPriority() > notes[j + 1].getPriority())
                 {
                     Note temporary = notes[j];
                     notes[j] = notes[j + 1];
@@ -387,7 +505,11 @@ public class Main
         }
     }
 
-    static int findNote(Note[] notes, int noteCount, Note sample)
+    static int findNote(
+        Note[] notes,
+        int noteCount,
+        Note sample
+    )
     {
         for (int i = 0; i < noteCount; i++)
         {
