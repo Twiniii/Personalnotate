@@ -1,13 +1,18 @@
+package models;
+
+import exceptions.InvalidPriorityException;
+import exceptions.InvalidTitleException;
+import exceptions.NoteException;
 import java.util.Locale;
 import java.util.Objects;
 
 public class Note
 {
-    final String title;
-    final String text;
-    final String category;
-    final int priority;
-    final double plannedMinutes;
+    private final String title;
+    private final String text;
+    private final String category;
+    private final int priority;
+    private final double plannedMinutes;
 
     public Note(
         String title,
@@ -41,30 +46,54 @@ public class Note
         this.plannedMinutes = plannedMinutes == 0 ? 0.0 : plannedMinutes;
     }
 
+    public String getTitle()
+    {
+        return title;
+    }
+
+    public String getText()
+    {
+        return text;
+    }
+
+    public String getCategory()
+    {
+        return category;
+    }
+
+    public int getPriority()
+    {
+        return priority;
+    }
+
+    public double getPlannedMinutes()
+    {
+        return plannedMinutes;
+    }
+
     public double getPlannedHours()
     {
         return plannedMinutes / 60.0;
     }
 
+    public String getTimeDescription()
+    {
+        if (plannedMinutes == 0)
+        {
+            return "не заплановано";
+        }
+
+        return String.format(
+            Locale.US,
+            "%.2f хв (%.2f год)",
+            plannedMinutes,
+            getPlannedHours()
+        );
+    }
+
     @Override
     public String toString()
     {
-        String time;
-
-        if (plannedMinutes == 0)
-        {
-            time = "не заплановано";
-        }
-        else
-        {
-            time = String.format(
-                Locale.US,
-                "%.2f хв (%.2f год)",
-                plannedMinutes,
-                getPlannedHours()
-            );
-        }
-
         return String.format(
             "Назва: %s%nТекст: %s%nКатегорія: %s%n"
                 + "Пріоритет: %d%nЧас виконання: %s",
@@ -72,7 +101,7 @@ public class Note
             text,
             category,
             priority,
-            time
+            getTimeDescription()
         );
     }
 

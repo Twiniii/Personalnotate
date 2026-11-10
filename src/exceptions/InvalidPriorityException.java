@@ -1,5 +1,9 @@
+package exceptions;
+
 public class InvalidPriorityException extends NoteException
 {
+    private static final long serialVersionUID = 1L;
+
     public InvalidPriorityException(int priority)
     {
         super(
