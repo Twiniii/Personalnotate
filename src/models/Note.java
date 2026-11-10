@@ -6,7 +6,7 @@ import exceptions.NoteException;
 import java.util.Locale;
 import java.util.Objects;
 
-public class Note
+public abstract sealed class Note permits TextNote, ChecklistNote
 {
     private final String title;
     private final String text;
@@ -14,7 +14,7 @@ public class Note
     private final int priority;
     private final double plannedMinutes;
 
-    public Note(
+    protected Note(
         String title,
         String text,
         String category,
@@ -44,6 +44,25 @@ public class Note
         this.category = category;
         this.priority = priority;
         this.plannedMinutes = plannedMinutes == 0 ? 0.0 : plannedMinutes;
+
+        traceConstructor("Note: спільні поля");
+    }
+
+    protected static void traceConstructor(String message)
+    {
+        if (Boolean.getBoolean("notes.trace"))
+        {
+            System.out.println("[Конструктор] " + message);
+        }
+    }
+
+    public abstract String getTypeName();
+
+    public abstract String getSummary();
+
+    public String getDisplayText()
+    {
+        return text;
     }
 
     public String getTitle()
@@ -95,8 +114,9 @@ public class Note
     public String toString()
     {
         return String.format(
-            "Назва: %s%nТекст: %s%nКатегорія: %s%n"
+            "Тип: %s%nНазва: %s%nТекст: %s%nКатегорія: %s%n"
                 + "Пріоритет: %d%nЧас виконання: %s",
+            getTypeName(),
             title,
             text,
             category,

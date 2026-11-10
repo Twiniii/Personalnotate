@@ -8,7 +8,7 @@ public class CompactNoteFormatter extends AbstractNoteFormatter
     {
         super(
             "Стислий",
-            "Назва, категорія та пріоритет одним рядком."
+            "Назва, тип, категорія, пріоритет і короткий підсумок."
         );
     }
 
@@ -16,9 +16,11 @@ public class CompactNoteFormatter extends AbstractNoteFormatter
     public String format(Note note)
     {
         return titleLine(note) + String.format(
-            " | Категорія: %s | Пріоритет: %d",
+            " | Тип: %s | Категорія: %s | Пріоритет: %d | %s",
+            note.getTypeName(),
             note.getCategory(),
-            note.getPriority()
+            note.getPriority(),
+            note.getSummary()
         );
     }
 }

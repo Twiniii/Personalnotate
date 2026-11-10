@@ -35,8 +35,8 @@ public class LegacyNoteFormatterAdapter
     public String format(Note note)
     {
         return renderer.renderRecord(
-            note.getTitle(),
-            note.getText(),
+            note.getTypeName() + ": " + note.getTitle(),
+            note.getDisplayText(),
             note.getCategory(),
             note.getPriority(),
             note.getPlannedMinutes()

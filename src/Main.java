@@ -5,7 +5,10 @@ import interfaces.NoteFormatter;
 import java.util.InputMismatchException;
 import java.util.Locale;
 import java.util.Scanner;
+import models.ChecklistNote;
 import models.Note;
+import models.ShoppingListNote;
+import models.TextNote;
 import observers.ConsoleNoteObserver;
 import observers.NoteStatisticsObserver;
 import services.NoteDisplay;
@@ -43,6 +46,7 @@ public class Main
                 System.out.println("5. Знайти нотатку за повним збігом");
                 System.out.println("6. Змінити формат відображення");
                 System.out.println("7. Переглянути статистику");
+                System.out.println("8. Змінити стан пункту списку");
                 System.out.println("0. Вийти");
                 System.out.print("Оберіть дію: ");
 
@@ -72,12 +76,11 @@ public class Main
                     for (int i = 0; i < amount; i++)
                     {
                         System.out.println();
-
                         System.out.println(
                             "Нотатка №" + (notebook.getCount() + 1)
                         );
 
-                        Note note = readValidNote(scanner);
+                        Note note = readValidNote(scanner, false);
                         notebook.addNote(note);
                     }
 
@@ -150,7 +153,7 @@ public class Main
                         "Введіть усі поля нотатки, яку потрібно знайти."
                     );
 
-                    Note sample = readValidNote(scanner);
+                    Note sample = readValidNote(scanner, true);
                     int index = notebook.findNote(sample);
 
                     if (index == -1)
@@ -182,6 +185,10 @@ public class Main
                 {
                     statistics.printStatistics();
                 }
+                else if (choice.equals("8"))
+                {
+                    changeItemState(scanner, notebook, display);
+                }
                 else
                 {
                     System.out.println("Такого варіанту немає.");
@@ -195,13 +202,13 @@ public class Main
         }
     }
 
-    static Note readValidNote(Scanner scanner)
+    static Note readValidNote(Scanner scanner, boolean search)
     {
         while (true)
         {
             try
             {
-                return readNote(scanner);
+                return readNote(scanner, search);
             }
             catch (NoteException error)
             {
@@ -213,11 +220,22 @@ public class Main
 
                 System.out.println("Введіть нотатку повторно.");
             }
+            catch (IllegalArgumentException error)
+            {
+                System.out.println(error.getMessage());
+                System.out.println("Введіть нотатку повторно.");
+            }
         }
     }
 
-    static Note readNote(Scanner scanner) throws NoteException
+    static Note readNote(Scanner scanner, boolean search) throws NoteException
     {
+        System.out.println("1. Текстова нотатка");
+        System.out.println("2. Список справ");
+        System.out.println("3. Список покупок");
+
+        int type = readInt(scanner, "Тип нотатки: ", 1, 3);
+
         System.out.print("Введіть назву нотатки: ");
         String title = scanner.nextLine();
 
@@ -234,16 +252,122 @@ public class Main
             Integer.MAX_VALUE
         );
 
-        double plannedMinutes = readMinutes(scanner);
+        double minutes = readMinutes(scanner);
 
         try
         {
-            return new Note(
+            if (type == 1)
+            {
+                System.out.print("Джерело (Enter — не вказано): ");
+                String source = scanner.nextLine();
+
+                if (source.isBlank())
+                {
+                    return new TextNote(
+                        title,
+                        text,
+                        category,
+                        priority,
+                        minutes
+                    );
+                }
+
+                return new TextNote(
+                    title,
+                    text,
+                    category,
+                    priority,
+                    minutes,
+                    source
+                );
+            }
+
+            int amount = readInt(
+                scanner,
+                "Кількість пунктів (1–100): ",
+                1,
+                100
+            );
+
+            String[] items = new String[amount];
+            boolean[] completed = new boolean[amount];
+
+            for (int i = 0; i < amount; i++)
+            {
+                while (true)
+                {
+                    System.out.print("Пункт №" + (i + 1) + ": ");
+                    items[i] = scanner.nextLine();
+
+                    if (!items[i].isBlank())
+                    {
+                        break;
+                    }
+
+                    System.out.println("Пункт не може бути порожнім.");
+                }
+
+                if (search)
+                {
+                    completed[i] = readInt(
+                        scanner,
+                        "Стан (0 — не виконано, 1 — виконано): ",
+                        0,
+                        1
+                    ) == 1;
+                }
+            }
+
+            if (type == 2)
+            {
+                if (search)
+                {
+                    return new ChecklistNote(
+                        title,
+                        text,
+                        category,
+                        priority,
+                        minutes,
+                        items,
+                        completed
+                    );
+                }
+
+                return new ChecklistNote(
+                    title,
+                    text,
+                    category,
+                    priority,
+                    minutes,
+                    items
+                );
+            }
+
+            System.out.print("Магазин (Enter — не вказано): ");
+            String store = scanner.nextLine();
+
+            if (search)
+            {
+                return new ShoppingListNote(
+                    title,
+                    text,
+                    category,
+                    priority,
+                    minutes,
+                    items,
+                    completed,
+                    store
+                );
+            }
+
+            return new ShoppingListNote(
                 title,
                 text,
                 category,
                 priority,
-                plannedMinutes
+                minutes,
+                items,
+                store
             );
         }
         catch (NoteException error)
@@ -501,9 +625,87 @@ public class Main
 
             System.out.println();
             System.out.println("Нотатка №" + number);
+            System.out.println(note.getSummary());
 
             display.show(note);
             number++;
         }
+    }
+
+    static void changeItemState(
+        Scanner scanner,
+        Notebook notebook,
+        NoteDisplay display
+    )
+    {
+        if (notebook.getCount() == 0)
+        {
+            System.out.println("Поки немає створених нотаток.");
+            return;
+        }
+
+        printTitles(notebook.getNotes());
+
+        int selected = readNoteNumber(
+            scanner,
+            notebook.getCount()
+        );
+
+        if (selected == 0)
+        {
+            return;
+        }
+
+        Note note = notebook.getNote(selected - 1);
+
+        String message = switch (note)
+        {
+            case ShoppingListNote shopping ->
+                "Магазин: " + shopping.getStore()
+                    + ". Залишилося купити: "
+                    + shopping.getRemainingCount();
+
+            case ChecklistNote checklist ->
+                "Залишилося виконати: "
+                    + checklist.getRemainingCount();
+
+            case TextNote textNote ->
+                "Текстова нотатка не має пунктів для позначення.";
+        };
+
+        System.out.println(message);
+
+        if (!(note instanceof ChecklistNote checklist))
+        {
+            return;
+        }
+
+        System.out.println(checklist.formatItems());
+
+        int item = readInt(
+            scanner,
+            "Номер пункту (0 — повернутися): ",
+            0,
+            checklist.getItemCount()
+        );
+
+        if (item == 0)
+        {
+            return;
+        }
+
+        int state = readInt(
+            scanner,
+            "Новий стан (0 — не виконано, 1 — виконано): ",
+            0,
+            1
+        );
+
+        checklist.setCompleted(item - 1, state == 1);
+
+        System.out.println("Стан пункту змінено.");
+        System.out.println(note.getSummary());
+
+        display.show(note);
     }
 }
