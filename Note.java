@@ -3,11 +3,11 @@ import java.util.Objects;
 
 public class Note
 {
-    String title;
-    String text;
-    String category;
-    int priority;
-    double plannedMinutes;
+    final String title;
+    final String text;
+    final String category;
+    final int priority;
+    final double plannedMinutes;
 
     public Note(
         String title,
@@ -15,13 +15,30 @@ public class Note
         String category,
         int priority,
         double plannedMinutes
-    )
+    ) throws NoteException
     {
+        if (title == null || title.isBlank())
+        {
+            throw new InvalidTitleException(title);
+        }
+
+        if (priority < 1 || priority > 10)
+        {
+            throw new InvalidPriorityException(priority);
+        }
+
+        if (!Double.isFinite(plannedMinutes) || plannedMinutes < 0)
+        {
+            throw new IllegalArgumentException(
+                "Час повинен бути скінченним невід’ємним числом."
+            );
+        }
+
         this.title = title;
         this.text = text;
         this.category = category;
         this.priority = priority;
-        this.plannedMinutes = plannedMinutes;
+        this.plannedMinutes = plannedMinutes == 0 ? 0.0 : plannedMinutes;
     }
 
     public double getPlannedHours()

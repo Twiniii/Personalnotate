@@ -1,3 +1,4 @@
+import java.util.InputMismatchException;
 import java.util.Locale;
 import java.util.Scanner;
 
@@ -8,187 +9,174 @@ public class Main
         Scanner scanner = new Scanner(System.in);
         scanner.useLocale(Locale.US);
 
-        Note[] notes = new Note[100];
-        int noteCount = 0;
-
-        System.out.println("Personalnotate");
-
-        while (true)
+        try
         {
-            System.out.println();
-            System.out.println("1. Додати нотатки");
-            System.out.println("2. Переглянути список та відкрити нотатку");
-            System.out.println("3. Показати та порахувати за пріоритетом");
-            System.out.println("4. Відсортувати за пріоритетом");
-            System.out.println("5. Знайти нотатку за повним збігом");
-            System.out.println("0. Вийти");
-            System.out.print("Оберіть дію: ");
+            Note[] notes = new Note[100];
+            int noteCount = 0;
 
-            String choice = scanner.nextLine();
+            System.out.println("Personalnotate");
 
-            if (choice.equals("0"))
+            while (true)
             {
-                break;
-            }
-            else if (choice.equals("1"))
-            {
-                if (noteCount == notes.length)
+                System.out.println();
+                System.out.println("1. Додати нотатки");
+                System.out.println("2. Переглянути список та відкрити нотатку");
+                System.out.println("3. Показати та порахувати за пріоритетом");
+                System.out.println("4. Відсортувати за пріоритетом");
+                System.out.println("5. Знайти нотатку за повним збігом");
+                System.out.println("0. Вийти");
+                System.out.print("Оберіть дію: ");
+
+                String choice = scanner.nextLine();
+
+                if (choice.equals("0"))
                 {
-                    System.out.println("Масив нотаток заповнений.");
-                    continue;
+                    break;
                 }
-
-                int freePlaces = notes.length - noteCount;
-
-                int amount = readInt(
-                    scanner,
-                    "Скільки нотаток додати (1–" + freePlaces + "): ",
-                    1,
-                    freePlaces
-                );
-
-                for (int i = 0; i < amount; i++)
+                else if (choice.equals("1"))
                 {
-                    System.out.println();
-                    System.out.println("Нотатка №" + (noteCount + 1));
-
-                    notes[noteCount] = readNote(scanner);
-                    noteCount++;
-                }
-
-                System.out.println("Додано нотаток: " + amount);
-            }
-            else if (choice.equals("2"))
-            {
-                if (noteCount == 0)
-                {
-                    System.out.println("Поки немає створених нотаток.");
-                    continue;
-                }
-
-                int number = 1;
-
-                for (Note note : notes)
-                {
-                    if (note == null)
+                    if (noteCount == notes.length)
                     {
+                        System.out.println("Масив нотаток заповнений.");
                         continue;
                     }
 
-                    System.out.printf("%d. %s%n", number, note.title);
-                    number++;
-                }
+                    int freePlaces = notes.length - noteCount;
 
-                int selected = readInt(
-                    scanner,
-                    "Номер нотатки (0 — повернутися в меню): ",
-                    0,
-                    noteCount
-                );
+                    int amount = readInt(
+                        scanner,
+                        "Скільки нотаток додати (1–" + freePlaces + "): ",
+                        1,
+                        freePlaces
+                    );
 
-                if (selected != 0)
-                {
-                    System.out.println();
-                    System.out.println(notes[selected - 1]);
-                }
-            }
-            else if (choice.equals("3"))
-            {
-                if (noteCount == 0)
-                {
-                    System.out.println("Поки немає створених нотаток.");
-                    continue;
-                }
-
-                int searchPriority = readInt(
-                    scanner,
-                    "Введіть пріоритет для пошуку (1–10): ",
-                    1,
-                    10
-                );
-
-                int foundCount = 0;
-
-                for (int i = 0; i < noteCount; i++)
-                {
-                    if (notes[i].priority == searchPriority)
+                    for (int i = 0; i < amount; i++)
                     {
                         System.out.println();
-                        System.out.println(notes[i]);
-                        foundCount++;
+                        System.out.println("Нотатка №" + (noteCount + 1));
+
+                        notes[noteCount] = readValidNote(scanner);
+                        noteCount++;
                     }
+
+                    System.out.println("Додано нотаток: " + amount);
                 }
-
-                System.out.println("Кількість знайдених: " + foundCount);
-            }
-            else if (choice.equals("4"))
-            {
-                if (noteCount == 0)
+                else if (choice.equals("2"))
                 {
-                    System.out.println("Поки немає створених нотаток.");
-                    continue;
+                    openNote(scanner, notes, noteCount);
                 }
-
-                System.out.println("До сортування:");
-                printNotes(notes);
-
-                sortByPriority(notes, noteCount);
-
-                System.out.println();
-                System.out.println("Після сортування:");
-                printNotes(notes);
-            }
-            else if (choice.equals("5"))
-            {
-                if (noteCount == 0)
+                else if (choice.equals("3"))
                 {
-                    System.out.println("Поки немає створених нотаток.");
-                    continue;
+                    if (noteCount == 0)
+                    {
+                        System.out.println("Поки немає створених нотаток.");
+                        continue;
+                    }
+
+                    int searchPriority = readInt(
+                        scanner,
+                        "Введіть пріоритет для пошуку (1–10): ",
+                        1,
+                        10
+                    );
+
+                    int foundCount = 0;
+
+                    for (int i = 0; i < noteCount; i++)
+                    {
+                        if (notes[i].priority == searchPriority)
+                        {
+                            System.out.println();
+                            System.out.println(notes[i]);
+                            foundCount++;
+                        }
+                    }
+
+                    System.out.println("Кількість знайдених: " + foundCount);
                 }
-
-                System.out.println(
-                    "Введіть усі поля нотатки, яку потрібно знайти."
-                );
-
-                Note sample = readNote(scanner);
-                int index = findNote(notes, noteCount, sample);
-
-                if (index == -1)
+                else if (choice.equals("4"))
                 {
-                    System.out.println("Нотатку з повним збігом не знайдено.");
+                    if (noteCount == 0)
+                    {
+                        System.out.println("Поки немає створених нотаток.");
+                        continue;
+                    }
+
+                    System.out.println("До сортування:");
+                    printNotes(notes);
+
+                    sortByPriority(notes, noteCount);
+
+                    System.out.println();
+                    System.out.println("Після сортування:");
+                    printNotes(notes);
+                }
+                else if (choice.equals("5"))
+                {
+                    if (noteCount == 0)
+                    {
+                        System.out.println("Поки немає створених нотаток.");
+                        continue;
+                    }
+
+                    System.out.println(
+                        "Введіть усі поля нотатки, яку потрібно знайти."
+                    );
+
+                    Note sample = readValidNote(scanner);
+                    int index = findNote(notes, noteCount, sample);
+
+                    if (index == -1)
+                    {
+                        System.out.println(
+                            "Нотатку з повним збігом не знайдено."
+                        );
+                    }
+                    else
+                    {
+                        System.out.println(
+                            "Знайдено нотатку №" + (index + 1)
+                        );
+
+                        System.out.println(notes[index]);
+                    }
                 }
                 else
                 {
-                    System.out.println("Знайдено нотатку №" + (index + 1));
-                    System.out.println(notes[index]);
+                    System.out.println("Такого варіанту немає.");
                 }
             }
-            else
-            {
-                System.out.println("Такого варіанту немає.");
-            }
         }
-
-        scanner.close();
-        System.out.println("До побачення!");
+        finally
+        {
+            scanner.close();
+            System.out.println("До побачення!");
+        }
     }
 
-    static Note readNote(Scanner scanner)
+    static Note readValidNote(Scanner scanner)
     {
-        String title;
-
         while (true)
         {
-            System.out.print("Введіть назву нотатки: ");
-            title = scanner.nextLine();
-
-            if (!title.isBlank())
+            try
             {
-                break;
+                return readNote(scanner);
             }
-
-            System.out.println("Назва не може бути порожньою.");
+            catch (NoteException error)
+            {
+                System.out.println(error.getMessage());
+                System.out.println(
+                    "Некоректне значення: [" + error.getInvalidValue() + "]"
+                );
+                System.out.println("Введіть нотатку повторно.");
+            }
         }
+    }
+
+    static Note readNote(Scanner scanner) throws NoteException
+    {
+        System.out.print("Введіть назву нотатки: ");
+        String title = scanner.nextLine();
 
         System.out.print("Введіть текст нотатки: ");
         String text = scanner.nextLine();
@@ -199,13 +187,31 @@ public class Main
         int priority = readInt(
             scanner,
             "Пріоритет (1 — найвищий, 10 — найнижчий): ",
-            1,
-            10
+            Integer.MIN_VALUE,
+            Integer.MAX_VALUE
         );
 
         double plannedMinutes = readMinutes(scanner);
 
-        return new Note(title, text, category, priority, plannedMinutes);
+        try
+        {
+            return new Note(
+                title,
+                text,
+                category,
+                priority,
+                plannedMinutes
+            );
+        }
+        catch (NoteException error)
+        {
+            System.err.println(
+                "[Діагностика] Не вдалося створити нотатку: "
+                    + error.getClass().getSimpleName()
+            );
+
+            throw error;
+        }
     }
 
     static int readInt(
@@ -219,22 +225,30 @@ public class Main
         {
             System.out.print(message);
 
-            if (!scanner.hasNextInt())
+            try
+            {
+                int value = scanner.nextInt();
+                scanner.nextLine();
+
+                if (value >= min && value <= max)
+                {
+                    return value;
+                }
+
+                System.out.printf(
+                    "Введіть число від %d до %d.%n",
+                    min,
+                    max
+                );
+            }
+            catch (InputMismatchException error)
             {
                 scanner.nextLine();
-                System.out.println("Потрібно ввести ціле число.");
-                continue;
+
+                System.out.println(
+                    "Помилка: потрібно ввести ціле число в межах типу int."
+                );
             }
-
-            int value = scanner.nextInt();
-            scanner.nextLine();
-
-            if (value >= min && value <= max)
-            {
-                return value;
-            }
-
-            System.out.printf("Введіть число від %d до %d.%n", min, max);
         }
     }
 
@@ -246,29 +260,95 @@ public class Main
                 "Час виконання у хвилинах (0 — не заплановано): "
             );
 
-            if (!scanner.hasNextDouble())
+            try
+            {
+                double value = scanner.nextDouble();
+                scanner.nextLine();
+
+                if (Double.isFinite(value) && value >= 0)
+                {
+                    return value == 0 ? 0.0 : value;
+                }
+
+                System.out.println(
+                    "Введіть скінченне невід’ємне число."
+                );
+            }
+            catch (InputMismatchException error)
             {
                 scanner.nextLine();
+
                 System.out.println(
-                    "Введіть число. Дробову частину відокремлюйте крапкою."
+                    "Помилка: потрібно ввести число. "
+                        + "Дробову частину відокремлюйте крапкою."
                 );
+            }
+        }
+    }
+
+    static void openNote(
+        Scanner scanner,
+        Note[] notes,
+        int noteCount
+    )
+    {
+        if (noteCount == 0)
+        {
+            System.out.println("Поки немає створених нотаток.");
+            return;
+        }
+
+        int number = 1;
+
+        for (Note note : notes)
+        {
+            if (note == null)
+            {
                 continue;
             }
 
-            double value = scanner.nextDouble();
-            scanner.nextLine();
+            System.out.printf("%d. %s%n", number, note.title);
+            number++;
+        }
 
-            if (Double.isFinite(value) && value >= 0)
+        while (true)
+        {
+            System.out.print(
+                "Номер нотатки (0 — повернутися в меню): "
+            );
+
+            try
             {
-                if (value == 0)
+                int selected = Integer.parseInt(
+                    scanner.nextLine().trim()
+                );
+
+                if (selected == 0)
                 {
-                    return 0.0;
+                    return;
                 }
 
-                return value;
-            }
+                if (selected < 1 || selected > noteCount)
+                {
+                    throw new IndexOutOfBoundsException(
+                        "Номер нотатки повинен бути від 1 до " + noteCount + "."
+                    );
+                }
 
-            System.out.println("Введіть скінченне невід’ємне число.");
+                System.out.println();
+                System.out.println(notes[selected - 1]);
+                return;
+            }
+            catch (NumberFormatException error)
+            {
+                System.out.println(
+                    "Номер нотатки потрібно ввести цілим числом."
+                );
+            }
+            catch (IndexOutOfBoundsException error)
+            {
+                System.out.println(error.getMessage());
+            }
         }
     }
 
