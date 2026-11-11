@@ -8,6 +8,7 @@ public final class ShoppingListNote extends ChecklistNote
     private final String store;
 
     public ShoppingListNote(
+        long id,
         String title,
         String text,
         String category,
@@ -18,6 +19,7 @@ public final class ShoppingListNote extends ChecklistNote
     ) throws NoteException
     {
         this(
+            id,
             title,
             text,
             category,
@@ -34,6 +36,7 @@ public final class ShoppingListNote extends ChecklistNote
     }
 
     public ShoppingListNote(
+        long id,
         String title,
         String text,
         String category,
@@ -45,6 +48,7 @@ public final class ShoppingListNote extends ChecklistNote
     ) throws NoteException
     {
         super(
+            id,
             title,
             text,
             category,
@@ -96,21 +100,15 @@ public final class ShoppingListNote extends ChecklistNote
     }
 
     @Override
-    public boolean equals(Object object)
+    public boolean hasSameContent(Note other)
     {
-        if (!super.equals(object))
+        if (!super.hasSameContent(other))
         {
             return false;
         }
 
-        ShoppingListNote other = (ShoppingListNote) object;
+        ShoppingListNote sameType = (ShoppingListNote) other;
 
-        return Objects.equals(store, other.store);
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return Objects.hash(super.hashCode(), store);
+        return Objects.equals(store, sameType.store);
     }
 }

@@ -30,7 +30,8 @@ public abstract class AbstractNoteFormatter
 
     protected String titleLine(Note note)
     {
-        return "Назва: " + note.getTitle();
+        return "ID: " + note.getId()
+            + " | Назва: " + note.getTitle();
     }
 
     @Override
