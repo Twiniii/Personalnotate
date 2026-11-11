@@ -1,23 +1,26 @@
 package services;
 
 import interfaces.NoteObserver;
+import interfaces.NoteService;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import models.Note;
 
 public class Notebook
 {
-    private final Note[] notes = new Note[100];
+    private final NoteService service;
     private final List<NoteObserver> observers = new ArrayList<>();
-    private int noteCount;
+
+    public Notebook(NoteService service)
+    {
+        this.service = Objects.requireNonNull(service);
+    }
 
     public void addObserver(NoteObserver observer)
     {
-        Objects.requireNonNull(
-            observer,
-            "Спостерігач не може бути null."
-        );
+        Objects.requireNonNull(observer);
 
         if (!observers.contains(observer))
         {
@@ -32,90 +35,90 @@ public class Notebook
 
     public void addNote(Note note)
     {
-        Objects.requireNonNull(
-            note,
-            "Нотатка не може бути null."
-        );
+        Objects.requireNonNull(note);
 
-        if (noteCount == notes.length)
+        for (Note existing : service.findAll())
         {
-            throw new IllegalStateException(
-                "Масив нотаток заповнений."
-            );
+            if (existing.getId() == note.getId())
+            {
+                throw new IllegalArgumentException(
+                    "Цей ID уже використовується."
+                );
+            }
         }
 
-        notes[noteCount] = note;
-        noteCount++;
+        service.save(note);
+        int total = getCount();
 
         for (NoteObserver observer : new ArrayList<>(observers))
         {
             try
             {
-                observer.onNoteAdded(note, noteCount);
+                observer.onNoteAdded(note, total);
             }
             catch (RuntimeException error)
             {
                 System.err.println(
-                    "Нотатку додано, але один зі спостерігачів не виконав дію: "
-                        + error.getMessage()
+                    "Помилка сповіщення: " + error.getMessage()
                 );
             }
         }
     }
 
+    public void updateNote(Note note)
+    {
+        Objects.requireNonNull(note);
+        service.findById(note.getId());
+        service.save(note);
+    }
+
+    public boolean deleteNote(long id)
+    {
+        return service.delete(id);
+    }
+
+    public Note getNote(long id)
+    {
+        return service.findById(id);
+    }
+
+    public List<Note> getNotes()
+    {
+        return service.findAll();
+    }
+
     public int getCount()
     {
-        return noteCount;
+        return service.findAll().size();
     }
 
-    public int getFreePlaces()
+    public List<Note> sortedByPriority()
     {
-        return notes.length - noteCount;
+        return service.findAllSorted(
+            Comparator.comparingInt(Note::getPriority)
+        );
     }
 
-    public Note getNote(int index)
+    public List<Note> sortedByName()
     {
-        if (index < 0 || index >= noteCount)
+        return service.findAllSortedByName();
+    }
+
+    public List<Note> sortedByNameAndPriority()
+    {
+        return service.findAllSortedByNameAndByPriority();
+    }
+
+    public Note findNote(Note sample)
+    {
+        for (Note note : service.findAll())
         {
-            throw new IndexOutOfBoundsException(
-                "Нотатки з таким індексом немає."
-            );
-        }
-
-        return notes[index];
-    }
-
-    public Note[] getNotes()
-    {
-        return notes.clone();
-    }
-
-    public void sortByPriority()
-    {
-        for (int i = 0; i < noteCount - 1; i++)
-        {
-            for (int j = 0; j < noteCount - 1 - i; j++)
+            if (note.hasSameContent(sample))
             {
-                if (notes[j].getPriority() > notes[j + 1].getPriority())
-                {
-                    Note temporary = notes[j];
-                    notes[j] = notes[j + 1];
-                    notes[j + 1] = temporary;
-                }
-            }
-        }
-    }
-
-    public int findNote(Note sample)
-    {
-        for (int i = 0; i < noteCount; i++)
-        {
-            if (notes[i].equals(sample))
-            {
-                return i;
+                return note;
             }
         }
 
-        return -1;
+        return null;
     }
 }

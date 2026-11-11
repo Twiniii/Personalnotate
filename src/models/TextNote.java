@@ -8,6 +8,7 @@ public final class TextNote extends Note
     private final String source;
 
     public TextNote(
+        long id,
         String title,
         String text,
         String category,
@@ -16,6 +17,7 @@ public final class TextNote extends Note
     ) throws NoteException
     {
         this(
+            id,
             title,
             text,
             category,
@@ -24,10 +26,13 @@ public final class TextNote extends Note
             "не вказано"
         );
 
-        traceConstructor("TextNote: короткий конструктор після this(...)");
+        traceConstructor(
+            "TextNote: короткий конструктор після this(...)"
+        );
     }
 
     public TextNote(
+        long id,
         String title,
         String text,
         String category,
@@ -36,7 +41,7 @@ public final class TextNote extends Note
         String source
     ) throws NoteException
     {
-        super(title, text, category, priority, plannedMinutes);
+        super(id, title, text, category, priority, plannedMinutes);
 
         this.source = source == null || source.isBlank()
             ? "не вказано"
@@ -79,21 +84,15 @@ public final class TextNote extends Note
     }
 
     @Override
-    public boolean equals(Object object)
+    public boolean hasSameContent(Note other)
     {
-        if (!super.equals(object))
+        if (!super.hasSameContent(other))
         {
             return false;
         }
 
-        TextNote other = (TextNote) object;
+        TextNote sameType = (TextNote) other;
 
-        return Objects.equals(source, other.source);
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return Objects.hash(super.hashCode(), source);
+        return Objects.equals(source, sameType.source);
     }
 }

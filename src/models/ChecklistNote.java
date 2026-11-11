@@ -2,14 +2,15 @@ package models;
 
 import exceptions.NoteException;
 import java.util.Arrays;
-import java.util.Objects;
 
-public sealed class ChecklistNote extends Note permits ShoppingListNote
+public sealed class ChecklistNote extends Note
+    permits ShoppingListNote
 {
     private final String[] items;
     private final boolean[] completed;
 
     public ChecklistNote(
+        long id,
         String title,
         String text,
         String category,
@@ -19,6 +20,7 @@ public sealed class ChecklistNote extends Note permits ShoppingListNote
     ) throws NoteException
     {
         this(
+            id,
             title,
             text,
             category,
@@ -34,6 +36,7 @@ public sealed class ChecklistNote extends Note permits ShoppingListNote
     }
 
     public ChecklistNote(
+        long id,
         String title,
         String text,
         String category,
@@ -43,7 +46,7 @@ public sealed class ChecklistNote extends Note permits ShoppingListNote
         boolean[] completed
     ) throws NoteException
     {
-        super(title, text, category, priority, plannedMinutes);
+        super(id, title, text, category, priority, plannedMinutes);
 
         if (items == null || items.length == 0
             || completed == null || items.length != completed.length)
@@ -145,8 +148,7 @@ public sealed class ChecklistNote extends Note permits ShoppingListNote
     @Override
     public String getSummary()
     {
-        return "Виконано: " + getCompletedCount()
-            + "/" + items.length
+        return "Виконано: " + getCompletedCount() + "/" + items.length
             + "; залишилося: " + getRemainingCount();
     }
 
@@ -167,26 +169,16 @@ public sealed class ChecklistNote extends Note permits ShoppingListNote
     }
 
     @Override
-    public boolean equals(Object object)
+    public boolean hasSameContent(Note other)
     {
-        if (!super.equals(object))
+        if (!super.hasSameContent(other))
         {
             return false;
         }
 
-        ChecklistNote other = (ChecklistNote) object;
+        ChecklistNote sameType = (ChecklistNote) other;
 
-        return Arrays.equals(items, other.items)
-            && Arrays.equals(completed, other.completed);
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return Objects.hash(
-            super.hashCode(),
-            Arrays.hashCode(items),
-            Arrays.hashCode(completed)
-        );
+        return Arrays.equals(items, sameType.items)
+            && Arrays.equals(completed, sameType.completed);
     }
 }

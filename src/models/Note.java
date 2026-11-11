@@ -6,15 +6,16 @@ import exceptions.NoteException;
 import java.util.Locale;
 import java.util.Objects;
 
-public abstract sealed class Note permits TextNote, ChecklistNote
+public abstract sealed class Note extends BaseEntity
+    permits TextNote, ChecklistNote
 {
-    private final String title;
     private final String text;
     private final String category;
     private final int priority;
     private final double plannedMinutes;
 
     protected Note(
+        long id,
         String title,
         String text,
         String category,
@@ -22,10 +23,7 @@ public abstract sealed class Note permits TextNote, ChecklistNote
         double plannedMinutes
     ) throws NoteException
     {
-        if (title == null || title.isBlank())
-        {
-            throw new InvalidTitleException(title);
-        }
+        super(id, requireTitle(title));
 
         if (priority < 1 || priority > 10)
         {
@@ -39,13 +37,23 @@ public abstract sealed class Note permits TextNote, ChecklistNote
             );
         }
 
-        this.title = title;
         this.text = text;
         this.category = category;
         this.priority = priority;
         this.plannedMinutes = plannedMinutes == 0 ? 0.0 : plannedMinutes;
 
         traceConstructor("Note: спільні поля");
+    }
+
+    private static String requireTitle(String title)
+        throws InvalidTitleException
+    {
+        if (title == null || title.isBlank())
+        {
+            throw new InvalidTitleException(title);
+        }
+
+        return title;
     }
 
     protected static void traceConstructor(String message)
@@ -67,7 +75,7 @@ public abstract sealed class Note permits TextNote, ChecklistNote
 
     public String getTitle()
     {
-        return title;
+        return getName();
     }
 
     public String getText()
@@ -114,10 +122,11 @@ public abstract sealed class Note permits TextNote, ChecklistNote
     public String toString()
     {
         return String.format(
-            "Тип: %s%nНазва: %s%nТекст: %s%nКатегорія: %s%n"
+            "ID: %d%nТип: %s%nНазва: %s%nТекст: %s%nКатегорія: %s%n"
                 + "Пріоритет: %d%nЧас виконання: %s",
+            getId(),
             getTypeName(),
-            title,
+            getTitle(),
             text,
             category,
             priority,
@@ -125,37 +134,14 @@ public abstract sealed class Note permits TextNote, ChecklistNote
         );
     }
 
-    @Override
-    public boolean equals(Object object)
+    public boolean hasSameContent(Note other)
     {
-        if (this == object)
-        {
-            return true;
-        }
-
-        if (object == null || getClass() != object.getClass())
-        {
-            return false;
-        }
-
-        Note other = (Note) object;
-
-        return Objects.equals(title, other.title)
+        return other != null
+            && getClass() == other.getClass()
+            && Objects.equals(getTitle(), other.getTitle())
             && Objects.equals(text, other.text)
             && Objects.equals(category, other.category)
             && priority == other.priority
             && Double.compare(plannedMinutes, other.plannedMinutes) == 0;
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return Objects.hash(
-            title,
-            text,
-            category,
-            priority,
-            plannedMinutes
-        );
     }
 }
